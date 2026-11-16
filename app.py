@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request
 import sqlite3
 
 # Create the Flask application object. __name__ tells Flask where this file lives.
-app = Flask(__name__)
+app = Flask(__name__, static_folder="frontend")
 
 # The following block is a route that's currently turned off.
 # A route connects a URL to a function. This one would answer /api/hello.
@@ -144,6 +144,11 @@ def delete_todo(todo_id):
 
     # Send back a success message.
     return jsonify({"message": "Task deleted successfully"}), 200
+
+@app.route("/")
+def index():
+    # Serve the index.html file from the frontend directory.
+    return app.send_static_file("index.html")
 
 # Run this block only when the file is started directly (python app.py),
 # not when another file imports it.

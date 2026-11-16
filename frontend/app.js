@@ -1,15 +1,15 @@
 let todos = [];
 const todoList = document.getElementById("todo-list");
 
-function retrieveTodos() {
-    const storedTodos = localStorage.getItem('todos');
-    if (storedTodos) {
-        todos.push(...JSON.parse(storedTodos));
-        renderTodos();
-    }
-}
-
-retrieveTodos();
+fetch("/api/todos")
+  .then(response => response.json())
+  .then(data => {
+    todos = data;
+    renderTodos();
+  })
+  .catch(error => {
+    console.error("Error fetching todos:", error);
+  });
 
 function renderTodos() {
     todoList.innerHTML = "";
@@ -43,13 +43,35 @@ function renderTodos() {
             renderTodos();
           });
           li.appendChild(deleteButton);
+      }
+      li.addEventListener("click", function() {
+        todo.done = !todo.done;
+        fetch(`/api/todos/${todo.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({done: todo.done})
+        })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
         }
-        li.addEventListener("click", function() {
-            todo.done = !todo.done;
-            localStorage.setItem('todos', JSON.stringify(todos));
+        return response.json();
+      })
+        .then(updatedTodo => {
+          const index = todos.findIndex(t => t.id === updatedTodo.id);
+          if (index !== -1) {
+            todos[index] = updatedTodo;
             renderTodos();
+          }
+        })
+        .catch(error => {
+          console.error("Error updating todo:", error);
         });
-        todoList.appendChild(li);
+    });
+
+    todoList.appendChild(li);
     });
 }
 
@@ -58,13 +80,27 @@ document.getElementById("addButton").addEventListener("click", function(event){
 
   const todoInput = document.getElementById("todo");
   const text = todoInput.value.trim();
+  if (!text) {
+    return; // Don't add empty tasks
+  }
 
-  if (text) {
-    todos.push({text, done: false});
+  fetch ("/api/todos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({text: text})
+  })
+  .then(response => response.json())
+  .then(newTodo => {
+    todos.push(newTodo);
     todoInput.value = "";
     renderTodos();
-    localStorage.setItem('todos', JSON.stringify(todos));
-  }
+  })
+  .catch(error => {
+    console.error("Error adding todo:", error);
+  });
+
 });
 
 document.getElementById("clearButton").addEventListener("click", function(event){
