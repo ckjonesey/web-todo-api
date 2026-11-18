@@ -36,16 +36,26 @@ function renderTodos() {
           deleteButton.classList.add("deleteButton");
           deleteButton.addEventListener("click", function(event) {
             event.stopPropagation(); // Prevent the li click event from firing
-            todos = todos.filter(function(item) {
-              return item !== todo;
-            });
-            localStorage.setItem('todos', JSON.stringify(todos));
+            fetch(`/api/todos/${todo.id}`, {
+              method: "DELETE"
+            })
+            .then(response => {
+            if(!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            todos = todos.filter(t => t.id !== todo.id);
             renderTodos();
+          })
+          .catch(error => {
+            console.error("Error deleting todo:", error);
           });
+        });
           li.appendChild(deleteButton);
       }
       li.addEventListener("click", function() {
         todo.done = !todo.done;
+        renderTodos();
+
         fetch(`/api/todos/${todo.id}`, {
           method: "PATCH",
           headers: {
@@ -53,25 +63,17 @@ function renderTodos() {
           },
           body: JSON.stringify({done: todo.done})
         })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
-      })
-        .then(updatedTodo => {
-          const index = todos.findIndex(t => t.id === updatedTodo.id);
-          if (index !== -1) {
-            todos[index] = updatedTodo;
-            renderTodos();
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
           }
         })
         .catch(error => {
           console.error("Error updating todo:", error);
         });
-    });
+      });
 
-    todoList.appendChild(li);
+        todoList.appendChild(li);
     });
 }
 
@@ -103,10 +105,28 @@ document.getElementById("addButton").addEventListener("click", function(event){
 
 });
 
-document.getElementById("clearButton").addEventListener("click", function(event){
-  todos = todos.filter(function(todo) {
-    return !todo.done;
-  });
-  renderTodos();
-  localStorage.setItem('todos', JSON.stringify(todos));
+document.getElementById("clearButton").addEventListener("click", function(event) {
+  // 1. Collect the completed tasks.
+  const completed = todos.filter(todo => todo.done);
+
+  // 2. Start one DELETE request per completed task. Each request returns a promise.
+  const requests = completed.map(todo =>
+    fetch(`/api/todos/${todo.id}`, { method: "DELETE" })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return todo.id;
+      })
+  );
+
+  // 3. Wait for all the requests, then remove the deleted tasks from the list.
+  Promise.all(requests)
+    .then(deletedIds => {
+      todos = todos.filter(todo => !deletedIds.includes(todo.id));
+      renderTodos();
+    })
+    .catch(error => {
+      console.error("Error clearing completed todos:", error);
+    });
 });
