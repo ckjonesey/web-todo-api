@@ -8,6 +8,7 @@ li {
   display: grid;
   grid-template-columns: 15% 70% 15%;
   align-items: center;
+  font-size: 2rem;
 }
 
 li .delete-button {
@@ -22,7 +23,7 @@ li:nth-child(odd) {
 ul {
     display: flex;
     flex-direction: column;
-    width: 250px;
+    width: 30vw;
 }
 .todolist {
     display: flex;
@@ -33,17 +34,17 @@ ul {
     align-items: left;
 }
 .deleteButton {
-    background: crimson;
+    background: rgba(220, 20, 60, 0.8);
     color: white;
     border: 1px;
     border-radius: 3px;
     padding: 2px;
     margin-left: 5px;
-    font-size: 8px;
+    font-size: 1.5rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    width: 26px;
+    width: 70px;
 }
 .checkbox {
     accent-color: #ffffff;

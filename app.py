@@ -156,5 +156,4 @@ def index():
 # not when another file imports it.
 if __name__ == "__main__":
     # Start the development server. debug=True reloads it when you save and shows error pages.
-    init_db()
     app.run(debug=True)
