@@ -7,6 +7,8 @@ import sqlite3
 # Create the Flask application object. __name__ tells Flask where this file lives.
 app = Flask(__name__, static_folder="frontend")
 
+DB_PATH = "todo.db"
+
 # The following block is a route that's currently turned off.
 # A route connects a URL to a function. This one would answer /api/hello.
 #@app.route("/api/hello")
@@ -14,36 +16,36 @@ app = Flask(__name__, static_folder="frontend")
 #def hello():
     # Build a JSON response with one key, "message".
     #return jsonify({"message": "Hello from Flask"})
+def init_db():
+    # Open a connection to the database file todo.db. If the file doesn't exist, SQLite creates it.
+    connection = sqlite3.connect(DB_PATH)
+    # A cursor is the object that runs SQL statements on that connection.
+    cursor = connection.cursor()
 
-# Open a connection to the database file todo.db. If the file doesn't exist, SQLite creates it.
-connection = sqlite3.connect('todo.db')
-# A cursor is the object that runs SQL statements on that connection.
-cursor = connection.cursor()
+    # Run a SQL statement that creates the todos table only if it doesn't already exist.
+    # The triple quotes let the SQL span several lines.
+    # Each task's unique number. INTEGER PRIMARY KEY makes it the row's identifier,
+    # and AUTOINCREMENT gives each new row a number one higher than the last.
+    # text holds the task's text, stored as a string.
+    # done records whether the task is finished, stored as 0 (not done) or 1 (done).
+    # NOT NULL means the column can't be empty, and CHECK limits it to 0 or 1.
+    cursor.execute('''CREATE TABLE IF NOT EXISTS todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT,
+        done BOOLEAN NOT NULL CHECK (done IN (0, 1))
+    )''')
 
-# Run a SQL statement that creates the todos table only if it doesn't already exist.
-# The triple quotes let the SQL span several lines.
-# Each task's unique number. INTEGER PRIMARY KEY makes it the row's identifier,
-# and AUTOINCREMENT gives each new row a number one higher than the last.
-# text holds the task's text, stored as a string.
-# done records whether the task is finished, stored as 0 (not done) or 1 (done).
-# NOT NULL means the column can't be empty, and CHECK limits it to 0 or 1.
-cursor.execute('''CREATE TABLE IF NOT EXISTS todos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT,
-    done BOOLEAN NOT NULL CHECK (done IN (0, 1))
-)''')
-
-# Save the table creation to the database file.
-connection.commit()
-# Close the connection, since this setup code is finished with it.
-connection.close()
+    # Save the table creation to the database file.
+    connection.commit()
+    # Close the connection, since this setup code is finished with it.
+    connection.close()
 
 # Register get_todos to handle GET requests to /api/todos.
 @app.route("/api/todos")
 # Function that returns every task as JSON.
 def get_todos():
     # Open a new connection, because each route runs separately and needs its own.
-    connection = sqlite3.connect('todo.db')
+    connection = sqlite3.connect(DB_PATH)
     # Create a cursor for running SQL on this connection.
     cursor = connection.cursor()
     # Ask the database for every column of every row in the todos table.
@@ -83,7 +85,7 @@ def post_todo():
     # Take the text from the request and remove spaces at both ends.
     text = data["text"].strip()
     # Open a new connection for this request.
-    connection = sqlite3.connect('todo.db')
+    connection = sqlite3.connect(DB_PATH)
     # Create a cursor for running SQL on it.
     cursor = connection.cursor()
     # Insert a new row. The ? is a placeholder that gets the text value safely,
@@ -108,7 +110,7 @@ def patch_todo(todo_id):
         return jsonify({"error": "Invalid request"}), 400
 
     # Open a new connection for this request.
-    connection = sqlite3.connect('todo.db')
+    connection = sqlite3.connect(DB_PATH)
     # Create a cursor for running SQL on it.
     cursor = connection.cursor()
     # Update the done value for the specified task.
@@ -128,7 +130,7 @@ def patch_todo(todo_id):
 @app.route("/api/todos/<int:todo_id>", methods=["DELETE"])
 def delete_todo(todo_id):
     # Open a new connection for this request.
-    connection = sqlite3.connect('todo.db')
+    connection = sqlite3.connect(DB_PATH)
     # Create a cursor for running SQL on it.
     cursor = connection.cursor()
     # Delete the specified task from the database.
@@ -154,4 +156,5 @@ def index():
 # not when another file imports it.
 if __name__ == "__main__":
     # Start the development server. debug=True reloads it when you save and shows error pages.
+    init_db()
     app.run(debug=True)
