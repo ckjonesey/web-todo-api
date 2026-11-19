@@ -40,6 +40,7 @@ def init_db():
     # Close the connection, since this setup code is finished with it.
     connection.close()
 
+init_db()
 # Register get_todos to handle GET requests to /api/todos.
 @app.route("/api/todos")
 # Function that returns every task as JSON.
